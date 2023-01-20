@@ -126,11 +126,83 @@ $app->get('/carrinho-dados', function () {
 
     $result = $sql->select("CALL sp_carrinhos_get('".session_id()."')");
 
-    echo json_encode($result[0]);
+    $carrinho = $result[0];
+
+    $sql = new Sql();
+    $carrinho['produtos'] = $sql->select("CALL sp_carrinhosprodutos_list(".$carrinho['id_car'].")");
+    $carrinho['total_car'] = number_format((float)$carrinho['total_car'], 2,',');
+    $carrinho['subtotal_car'] = number_format((float)$carrinho['subtotal_car'], 2,',');
+    $carrinho['frete_car'] = number_format((float)$carrinho['frete_car'], 2,',');
+
+    echo json_encode($carrinho);
 });
 $app->post('/carrinho', function () {
     $request_body = json_decode(file_get_contents('php://input'), true);
 
     var_dump($request_body);
 });
+$app->get('/carrinhoAdd-:id_prod', function ($id_prod) {
+    $sql = new Sql();
+
+    $result = $sql->select("CALL sp_carrinhos_get('".session_id()."')");
+
+    $carrinho = $result[0];
+    
+    $sql = new Sql();
+
+    $sql->query("CALL sp_carrinhosprodutos_add(".$carrinho['id_car'].",".$id_prod.")");
+
+    header("Location: cart");
+    exit;
+});
+$app->delete("/carrinhoRemoveAll-:id_prod", function ($id_prod) {
+    $sql = new Sql();
+
+    $result = $sql->select("CALL sp_carrinhos_get('".session_id()."')");
+
+    $carrinho = $result[0];
+    
+    $sql = new Sql();
+
+    $sql->query("CALL sp_carrinhosprodutostodos_rem(".$carrinho['id_car'].",".$id_prod.")");
+
+});
+$app->post("/carrinho-produto", function(){
+
+    $data = json_decode(file_get_contents("php://input"), true);
+
+    $sql = new Sql();
+
+    $result = $sql->select("CALL sp_carrinhos_get('".session_id()."')");
+
+    $carrinho = $result[0];
+
+    $sql = new Sql();
+
+    $sql->query("CALL sp_carrinhosprodutos_add(".$carrinho['id_car'].", ".$data['id_prod'].")");
+
+    echo json_encode(array(
+        "success"=>true
+    ));
+
+});
+$app->delete("/carrinho-produto", function ($id_prod) {
+    $data = json_decode(file_get_contents("php://input"), true);
+
+    $sql = new Sql();
+
+    $result = $sql->select("CALL sp_carrinhos_get('".session_id()."')");
+
+    $carrinho = $result[0];
+
+    $sql = new Sql();
+
+    $sql->query("CALL sp_carrinhosprodutos_ram(".$carrinho['id_car'].", ".$data['id_prod'].")");
+
+    echo json_encode(array(
+        "success"=>true
+    ));
+
+});
+
 $app->run();
